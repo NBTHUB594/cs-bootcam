@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ฟีดปัญหาในชุมชน</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">ฟีดปัญหาในชุมชน</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse justify-content-end" id="navbarContent">
+                <button class="btn btn-warning fw-bold mb-2 mb-lg-0 me-lg-3 mt-3 mt-lg-0" type="button" data-bs-toggle="modal" data-bs-target="#report-modal">
+                    สร้างโพสต์ (ร้องเรียนปัญหา)
+                </button>
+                <div class="d-none flex-column flex-lg-row align-items-lg-center mt-2 mt-lg-0" id="user-nav">
+                    <span class="navbar-text me-lg-3 mb-2 mb-lg-0 text-white" id="user-display-name"></span>
+                    <button class="btn btn-outline-light" id="logout-button">ออกจากระบบ</button>
+                </div>
+                <div class="d-flex flex-column flex-lg-row mt-2 mt-lg-0" id="guest-nav">
+                    <a href="login.html" class="btn btn-outline-light mb-2 mb-lg-0 me-lg-2">เข้าสู่ระบบ</a>
+                    <a href="register.html" class="btn btn-light">สมัครสมาชิก</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                    <h4 class="mb-0">รายการปัญหา</h4>
+                    <div class="d-flex flex-wrap gap-2">
+                        <select class="form-select w-auto" id="province-filter">
+                            <option value="all">ทุกจังหวัด</option>
+                        </select>
+                        <select class="form-select w-auto" id="district-filter">
+                            <option value="all">ทุกอำเภอ</option>
+                        </select>
+                        <select class="form-select w-auto" id="sort-select">
+                            <option value="latest">เรียงตามล่าสุด</option>
+                            <option value="top_likes">เรียงตามยอดไลก์</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="problems-feed" class="vstack gap-3">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center mt-4">
+         <a href="/public/dashboard.html">สำหรับเจ้าหน้าที่</a>
+    </div>
+
+    
+    <div class="modal fade" id="report-modal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reportModalLabel">แจ้งปัญหาที่คุณพบ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="report-form">
+                        <div class="mb-3">
+                            <label for="problem-description" class="form-label">รายละเอียดปัญหา</label>
+                            <textarea class="form-control" id="problem-description" rows="4" required placeholder="เช่น ไฟถนนดับ, ท่อระบายน้ำอุดตัน"></textarea>
+                        </div>
+                        <div class="mb-3">
+                                <label for="problem-image" class="form-label">รูปภาพ (สูงสุด 3 รูป)</label>
+                                <input type="file" class="form-control" id="problem-image" accept="image/*" multiple>
+                                <small class="text-muted">เลือกได้สูงสุด 3 รูปภาพ ระบบจะบีบอัดอัตโนมัติ</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ปักหมุดจุดที่เกิดปัญหาบนแผนที่</label>
+                            <div id="map" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
+                            <small class="text-muted mt-1 d-block">คุณสามารถลากหมุดบนแผนที่เพื่อระบุตำแหน่งที่ชัดเจนได้</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="problem-location" class="form-label">สถานที่ / บริเวณที่พบปัญหา (ระบบดึงมาให้อัตโนมัติ หรือแก้ไขเพิ่มเติมได้)</label>
+                            <input type="text" class="form-control" id="problem-location" required placeholder="เช่น หน้าบ้านเลขที่ 50, ซอย 1">
+                            <input type="hidden" id="problem-lat" value="">
+                            <input type="hidden" id="problem-lng" value="">
+                            <input type="hidden" id="problem-province" value="">
+                            <input type="hidden" id="problem-district" value="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="contact-info" class="form-label">ข้อมูลติดต่อ (ไม่บังคับ)</label>
+                            <input type="text" class="form-control" id="contact-info" placeholder="ชื่อ หรือเบอร์โทรศัพท์สำหรับติดต่อกลับ">
+                        </div>
+                        <div id="anonymous-checkbox-container" style="display: none;">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="anonymous-post-checkbox">
+                                <label class="form-check-label" for="anonymous-post-checkbox">
+                                    โพสต์โดยไม่ระบุชื่อ
+                                </label>
+                            </div>
+                        </div>
+                        <div id="alert-message" class="mt-3"></div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">ส่งเรื่อง</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <div class="modal fade" id="info-modal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="infoModalLabel">รายละเอียดปัญหา</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="info-modal-body">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <style>
+        #catfishBanner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 9999;
+            background: rgba(0,0,0,0);
+            text-align: center;
+        }
+        .catfishInner {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+        }
+        .catfishPC {
+            display: block;
+            flex: 1;
+        }
+        #catfishClose {
+            position: absolute;
+            top: -30px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 2px 15px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 5px 5px 0 0;
+            user-select: none;
+        }
+        body { padding-bottom: 120px; }
+        @media (max-height: 600px) {
+            #catfishBanner { display: none !important; }
+            body { padding-bottom: 0; }
+        }
+        @media (max-width: 991px) {
+            #box-side-l, #box-side-r { display: none !important; }
+        }
+    </style>
+    
+    <!-- banner web นอก รู้ๆกันอยู่ -->
+     <!--ปุ่มปิด -->
+     <!-- <span id="catfishClose" onclick="document.getElementById('catfishBanner').style.display='none'; document.body.style.paddingBottom='0';">×</span>  -->
+      <!-- <img src="https://manage.player24k.com/image/X12-icon.png" width="24" height="24" style="background:rgba(255,255,255,0.8);border-radius:50%;box-shadow:0 0 3px rgba(0,0,0,0.3);"> -->
+    <!-- <div id="catfishBanner">
+        <div class="catfishInner">
+            <a class="catfishPC" href="https://t.ly/789stsmovie" target="_blank" rel="nofollow noopener noreferrer">
+               <img fetchpriority="high" src="https://i.imgur.com/47qxXf9.gif" alt="Banner PC" style="width:100%; max-height:100px; object-fit:contain;">
+            </a>
+            <a class="catfishPC" href="https://cutt.ly/0yqJ3lH6" target="_blank" rel="nofollow noopener noreferrer">
+               <img src="https://i.imgur.com/CPYpIkY.gif" alt="Banner PC" style="width:100%; max-height:100px; object-fit:contain;">
+            </a>
+            <span id="catfishClose" onclick="document.getElementById('catfishBanner').style.display='none'; document.body.style.paddingBottom='0';">×</span> 
+        </div>
+    </div>
+    <div id="box-side-r" style="position:fixed;bottom:160px;right:5px;z-index:9998;width:140px;display:block;">
+        <div style="text-align:center;margin-bottom:5px;">
+            <a href="javascript:void(0);" onclick="document.querySelectorAll('#box-side-l,#box-side-r,#box-footer-fix').forEach(function(x){x.remove();})" style="cursor:pointer;">
+                <img src="https://manage.player24k.com/image/X12-icon.png" width="24" height="24" style="background:rgba(255,255,255,0.8);border-radius:50%;box-shadow:0 0 3px rgba(0,0,0,0.3);">
+            </a>
+        </div>
+        <div style="display:flex;flex-direction:column;">
+            <a href="https://ibit.ly/lotto77" target="_blank" rel="nofollow noopener"><img src="https://manage.player24k.com/storage/ads/vW1sDux00GtKuK0zAWKfPJ1Jn9WyUOAoGztABu7l.gif" style="display:block;max-width:100%;height:auto;border:0;" alt="Advertisement"></a>
+            <a href="https://ibit.ly/juad88" target="_blank" rel="nofollow noopener"><img src="https://manage.player24k.com/storage/ads/K12tpwvpSOOAwgdG1EDIyeIN15FMm6Fkoklfm3rC.webp" style="display:block;max-width:100%;height:auto;border:0;" alt="Advertisement"></a>
+        </div>
+    </div>
+
+    <div id="box-side-l" style="position:fixed;bottom:160px;left:5px;z-index:9998;width:140px;display:block;">
+        <div style="text-align:center;margin-bottom:5px;">
+            <a href="javascript:void(0);" onclick="document.querySelectorAll('#box-side-l,#box-side-r,#box-footer-fix').forEach(function(x){x.remove();})" style="cursor:pointer;">
+                <img src="https://manage.player24k.com/image/X12-icon.png" width="24" height="24" style="background:rgba(255,255,255,0.8);border-radius:50%;box-shadow:0 0 3px rgba(0,0,0,0.3);">
+            </a>
+        </div>
+        <div style="display:flex;flex-direction:column;">
+            <a href="https://debet.net/th?a=a47e0d862f9f3ed40222416921a4c9ff&amp;utm_source=animerukacom&amp;utm_medium=floatingleft-140x250&amp;utm_campaign=cpd&amp;utm_term=movies" target="_blank" rel="nofollow noopener"><img src="https://manage.player24k.com/storage/ads/vW1sDux00GtKuK0zAWKfPJ1Jn9WyUOAoGztABu7l.gif" style="display:block;max-width:100%;height:auto;border:0;" alt="Debet"></a>
+            <a href="https://ibit.ly/ufazeed" target="_blank" rel="nofollow noopener"><img src="https://manage.player24k.com/storage/ads/Y8PyVYTiTIgusnR2x1iZlrcTJpTkpVB1IxosZ2tu.webp" style="display:block;max-width:100%;height:auto;border:0;" alt="Advertisement"></a>
+        </div>
+    </div> -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

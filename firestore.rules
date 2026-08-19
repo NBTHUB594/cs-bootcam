@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+    function isOwner() {
+      return request.auth.token.role == 'owner' || 
+             (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner');
+    }
+
+    function isLeader() {
+      return request.auth.token.role == 'leader' || 
+             (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'leader');
+    }
+    
+    function isMember() {
+    	return request.auth.token.role == 'member' || 
+             (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'member');
+    }
+
+    function isOfficial() {
+      return isOwner() || 
+             request.auth.token.role == 'official' || 
+             (request.auth != null && 'clanId' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data);
+    }
+    
+    function isUser(userId) {
+    	return request.auth.uid == userId;
+    }
+    
+    function isLeaderOfClan(clanId) {
+    	return isLeader() && 
+             (request.auth.token.clanId == clanId || 
+             (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.clanId == clanId));
+    }
+
+    // --- Collections Rules ---
+
+    match /users/{userId} {
+      // A user is created automatically on signup, but we need to create a firestore doc.
+      // Anyone can create their own user doc.
+      allow create: if request.auth.uid == userId;
+      
+      // Users can read their own doc.
+      // Owners can read any doc.
+      // Leaders can read docs of users in their clan.
+      allow read: if request.auth != null;
+      
+      // A user can update their own info (but not their role or clan).
+      // An owner can update anything.
+      // A leader can update a user in their own clan.
+      allow update: if (isUser(userId) && !(request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'clanId'])))
+      							|| isOwner()
+                    || (isLeaderOfClan(get(/databases/$(database)/documents/users/$(userId)).data.clanId))
+                    || (isLeader() && request.resource.data.clanId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.clanId);
+
+      allow delete: if isOwner();
+    }
+
+    match /problems/{problemId} {
+      allow create: if true;
+      allow read: if true;
+      allow delete: if request.auth != null && isOfficial();
+      
+      allow update: if request.auth != null && (
+        isOfficial() || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'likedBy'])
+      );
+    }
+
+    match /clans/{clanId} {
+      // Members of a clan can read their clan's document.
+      // Owners can read any clan doc.
+      allow read: if isOwner() || (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.clanId == clanId) || (request.auth.token.clanId == clanId && request.auth.token.clanId != null);
+      
+      // Only owners can create clans.
+      allow create: if isOwner();
+      
+      // Only the leader of the clan or an owner can update it.
+      allow update: if isOwner() || isLeaderOfClan(clanId);
+      
+      // Only owners can delete clans.
+      allow delete: if isOwner();
+    }
+  }
+}

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แดชบอร์ดเจ้าหน้าที่</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .problem-card {
+            border-left-width: 5px;
+        }
+        .status-แจ้งเรื่องแล้ว {
+            border-left-color: var(--bs-warning);
+        }
+        .status-กำลังดำเนินการ {
+            border-left-color: var(--bs-info);
+        }
+        .status-แก้ไขแล้ว {
+            border-left-color: var(--bs-success);
+        }
+    </style>
+</head>
+<body>
+    
+    <div id="login-view">
+        <div class="container vh-100 d-flex justify-content-center align-items-center">
+            <div class="col-md-5 col-lg-4">
+                <div class="card shadow">
+                    <div class="card-body p-4">
+                        <h1 class="h3 mb-3 text-center">สำหรับเจ้าหน้าที่</h1>
+                        <form id="login-form">
+                            <div class="mb-3">
+                                <label for="login-email" class="form-label">อีเมล</label>
+                                <input type="email" class="form-control" id="login-email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="login-password" class="form-label">รหัสผ่าน</label>
+                                <input type="password" class="form-control" id="login-password" required>
+                            </div>
+                            <div id="login-error" class="text-danger mb-3"></div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">เข้าสู่ระบบ</button>
+                            </div>
+                        </form>
+                           <div class="text-center mt-3">
+                    <a href="/public/index.html">กลับไปหน้าแจ้งปัญหา</a>
+                </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="dashboard-view" style="display: none;">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold" href="#">แดชบอร์ดเจ้าหน้าที่</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#dashboardNavbarContent" aria-controls="dashboardNavbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-end" id="dashboardNavbarContent">
+                    <div class="d-flex flex-column flex-lg-row mt-3 mt-lg-0">
+                        <a href="index.html" class="btn btn-outline-info mb-2 mb-lg-0 me-lg-2">กลับไปหน้าแจ้งปัญหา</a>
+                        <button class="btn btn-outline-light" id="logout-button">ออกจากระบบ</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <div class="container mt-4">
+            
+            <div id="clan-management-section" style="display: none;">
+                <hr class="my-4">
+                <h2 class="mb-3">การจัดการหน่วยงาน (Clan)</h2>
+
+                
+                <div id="create-clan-view">
+                    <h3 class="h4">สร้างหน่วยงานใหม่</h3>
+                    <p>คุณยังไม่ได้อยู่ในหน่วยงานใดๆ สร้างหน่วยงานใหม่เพื่อเริ่มการจัดการ</p>
+                    <form id="create-clan-form">
+                        <div class="mb-3">
+                            <label for="clan-name" class="form-label">ชื่อหน่วยงาน</label>
+                            <input type="text" id="clan-name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="clan-provinces" class="form-label">เขต/จังหวัดที่ดูแล (คั่นด้วยลูกน้ำ เช่น กรุงเทพมหานคร, นนทบุรี)</label>
+                            <input type="text" id="clan-provinces" class="form-control" placeholder="ใส่ชื่อจังหวัดที่ดูแล" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">สร้างหน่วยงาน</button>
+                    </form>
+                </div>
+
+                
+                <div id="owner-clan-creation-view" style="display: none;">
+                    <h3 class="h4">สร้างหน่วยงานใหม่ (สำหรับ Owner)</h3>
+                    <form id="owner-create-clan-form">
+                        <div class="mb-3">
+                            <label for="owner-clan-name" class="form-label">ชื่อหน่วยงาน</label>
+                            <input type="text" id="owner-clan-name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="owner-clan-provinces" class="form-label">เขต/จังหวัดที่ดูแล (คั่นด้วยลูกน้ำ เช่น กรุงเทพมหานคร, นนทบุรี)</label>
+                            <input type="text" id="owner-clan-provinces" class="form-control" placeholder="ใส่ชื่อจังหวัดที่ดูแล" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="owner-leader-email" class="form-label">อีเมลของหัวหน้าหน่วยงาน (Leader)</label>
+                            <input type="email" id="owner-leader-email" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-success">สร้างหน่วยงานและตั้ง Leader</button>
+                    </form>
+                </div>
+
+                
+                <div id="manage-clan-view" style="display: none;">
+                    <div class="d-flex align-items-center mb-2">
+                        <h3 class="h4 mb-0">จัดการหน่วยงาน: <span id="clan-name-display"></span></h3>
+                        <button id="edit-clan-name-btn" class="btn btn-sm btn-outline-secondary ms-3">แก้ไขชื่อ</button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>เขต/จังหวัดที่ดูแล: </strong>
+                        <span id="clan-provinces-display">ไม่มีข้อมูล</span>
+                        <button id="edit-clan-provinces-btn" class="btn btn-sm btn-outline-secondary ms-2">แก้ไขเขต/จังหวัด</button>
+                    </div>
+
+                    
+                    <form id="edit-clan-name-form" class="mt-2 mb-3" style="display: none;">
+                        <div class="input-group">
+                            <input type="text" id="new-clan-name" class="form-control" placeholder="ชื่อหน่วยงานใหม่" required>
+                            <button class="btn btn-primary" type="submit">บันทึกชื่อ</button>
+                            <button id="cancel-edit-clan-name-btn" class="btn btn-secondary" type="button">ยกเลิก</button>
+                        </div>
+                    </form>
+
+                    
+                    <form id="edit-clan-provinces-form" class="mt-2 mb-4" style="display: none;">
+                        <div class="input-group">
+                            <input type="text" id="new-clan-provinces" class="form-control" placeholder="คั่นด้วยลูกน้ำ เช่น กรุงเทพมหานคร, นนทบุรี" required>
+                            <button class="btn btn-primary" type="submit">บันทึกเขตพื้นที่</button>
+                            <button id="cancel-edit-clan-provinces-btn" class="btn btn-secondary" type="button">ยกเลิก</button>
+                        </div>
+                    </form>
+                    
+                    
+                    <div class="card">
+                        <div class="card-header">สมาชิกในหน่วยงาน</div>
+                        <ul class="list-group list-group-flush" id="clan-member-list">
+                            
+                        </ul>
+                    </div>
+
+                    
+                    <form id="invite-member-form" class="mt-4">
+                        <h4 class="h5">เชิญสมาชิกใหม่</h4>
+                        <div class="input-group mb-3">
+                            <input type="email" id="invite-email" class="form-control" placeholder="อีเมลของสมาชิกใหม่" required>
+                            <select id="invite-role" class="form-select" style="max-width: 150px;">
+                                <option value="member">Member</option>
+                                
+                            </select>
+                            <button class="btn btn-outline-secondary" type="submit">เชิญ</button>
+                        </div>
+                    </form>
+
+                     
+                    <div class="mt-4">
+                        <h4 class="h5">สร้าง Role ใหม่ภายในหน่วยงาน</h4>
+                        <form id="create-role-form">
+                        <div class="input-group mb-3">
+                         <input type="text" id="role-name" class="form-control" placeholder="ชื่อ Role" required>
+                            <button class="btn btn-outline-secondary" type="submit">สร้าง Role</button>
+                        </div>
+                        </form>
+                        
+                        <div class="mt-2">
+                            <h6>Role ที่มีอยู่:</h6>
+                            <ul id="custom-roles-list" class="list-group list-group-sm">
+                                <li class="list-group-item text-muted">กำลังโหลด...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div> 
+            
+            <hr class="my-4">
+            
+            <div id="problems-section" style="display: none;">
+                <div class="row align-items-center mb-4">
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <h3 class="mb-0">รายการปัญหา</h3>
+                    </div>
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <select class="form-select" id="province-filter">
+                            <option value="all">ทุกเขต/จังหวัดในความดูแล</option>
+                            
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" id="sort-select">
+                            <option value="latest">เรียงตามล่าสุด</option>
+                            <option value="top_likes">เรียงตามยอดไลก์</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row g-4" id="problems-list">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="dashboard-app.js"></script>
+</body>
+</html>
